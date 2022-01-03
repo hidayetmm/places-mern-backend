@@ -50,6 +50,6 @@ mongoose
   )
   .then(() => {
     console.log("Database connection established.");
-    app.listen(7070);
+    app.listen(process.env.PORT || 7070);
   })
   .catch((error) => console.log(error));
