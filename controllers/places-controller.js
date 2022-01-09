@@ -98,77 +98,70 @@ const createPlace = async (req, res, next) => {
     urlEndpoint: "https://ik.imagekit.io/places",
   });
 
-  fs.readFile(req.file.path, (err, data) => {
-    if (err) {
-      console.log(err);
-    }
-    imagekit
-      .upload({
-        file: data,
-        fileName: title.toLowerCase(),
-        extensions: [
-          {
-            name: "google-auto-tagging",
-            maxTags: 5,
-            minConfidence: 95,
-          },
-        ],
-      })
-      .then(async (result) => {
-        fs.unlink(req.file.path, (err) => {
-          console.log(err);
-        });
+  let imageUrl;
 
-        const createdPlace = new Place({
-          title,
-          description,
-          address: coordinates.address,
-          location: coordinates,
-          image: result.url,
-          creator: req.userData.userId,
-        });
+  try {
+    const result = await imagekit.upload({
+      file: req.file.buffer,
+      fileName: title.toLowerCase(),
+      extensions: [
+        {
+          name: "google-auto-tagging",
+          maxTags: 5,
+          minConfidence: 95,
+        },
+      ],
+    });
+    imageUrl = result.url;
+  } catch (err) {
+    const error = new HttpError(err.message, 500);
+    return next(error);
+  }
 
-        let user;
-        try {
-          user = await User.findById(req.userData.userId);
-        } catch (err) {
-          const error = new HttpError(
-            "Could not find a user with the provided id.",
-            404
-          );
-          return next(error);
-        }
-
-        if (!user) {
-          const error = new HttpError(
-            "Could not find a user with the provided id.",
-            404
-          );
-          return next(error);
-        }
-
-        try {
-          const sess = await mongoose.startSession();
-          sess.startTransaction();
-          await createdPlace.save({ session: sess });
-          user.places.push(createdPlace);
-          await user.save({ session: sess });
-          await sess.commitTransaction();
-        } catch (err) {
-          const error = new HttpError(
-            "Creating place failed, please try again.",
-            500
-          );
-          return next(error);
-        }
-
-        res.status(201).json({ place: createdPlace });
-      })
-      .catch((err) => {
-        const error = new HttpError(err.message, 500);
-        return next(error);
-      });
+  const createdPlace = new Place({
+    title,
+    description,
+    address: coordinates.address,
+    location: coordinates,
+    image: imageUrl,
+    creator: req.userData.userId,
   });
+
+  let user;
+  try {
+    user = await User.findById(req.userData.userId);
+  } catch (err) {
+    const error = new HttpError(
+      "Could not find a user with the provided id.",
+      404
+    );
+    return next(error);
+  }
+
+  if (!user) {
+    const error = new HttpError(
+      "Could not find a user with the provided id.",
+      404
+    );
+    return next(error);
+  }
+
+  try {
+    const sess = await mongoose.startSession();
+    sess.startTransaction();
+    await createdPlace.save({ session: sess });
+    user.places.push(createdPlace);
+    await user.save({ session: sess });
+    await sess.commitTransaction();
+  } catch (err) {
+    const error = new HttpError(
+      "Creating place failed, please try again.",
+      500
+    );
+    return next(error);
+  }
+
+  res.status(201).json({ place: createdPlace });
 };
 
 const updatePlace = async (req, res, next) => {
