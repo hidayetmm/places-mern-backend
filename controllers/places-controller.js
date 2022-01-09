@@ -113,6 +113,7 @@ const createPlace = async (req, res, next) => {
       ],
     });
     imageUrl = result.url;
+    req.fileId = result.fileId;
   } catch (err) {
     const error = new HttpError(err.message, 500);
     return next(error);

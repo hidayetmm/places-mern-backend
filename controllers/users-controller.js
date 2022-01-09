@@ -3,6 +3,7 @@ const { validationResult } = require("express-validator");
 const User = require("../models/user");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const ImageKit = require("imagekit");
 
 const getAllUsers = async (req, res, next) => {
   let users;
@@ -68,18 +69,47 @@ const signupUser = async (req, res, next) => {
     return next(error);
   }
 
+  let imageUrl;
+
+  if (req.file) {
+    // Image upload
+
+    const imagekit = new ImageKit({
+      publicKey: process.env.IMAGEKIT_PUBLIC_KEY,
+      privateKey: process.env.IMAGEKIT_PRIVATE_KEY,
+      urlEndpoint: "https://ik.imagekit.io/places",
+    });
+
+    try {
+      const result = await imagekit.upload({
+        file: req.file.buffer,
+        fileName: title.toLowerCase(),
+        extensions: [
+          {
+            name: "google-auto-tagging",
+            maxTags: 5,
+            minConfidence: 95,
+          },
+        ],
+      });
+      imageUrl = result.url;
+    } catch (err) {
+      const error = new HttpError(err.message, 500);
+      return next(error);
+    }
+  }
+
   const createdUser = new User({
     name,
     email,
-    image: req.file
-      ? req.file.path
-      : "http://localhost:7070/uploads/images/default-user.png",
+    image: req.file ? imageUrl : null,
     password: hashedPassword,
     places: [],
   });
   try {
     await createdUser.save();
   } catch (err) {
+    console.log(err);
     const error = new HttpError("Signing up failed, please try again.", 500);
     return next(error);
   }
