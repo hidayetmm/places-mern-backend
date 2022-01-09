@@ -235,7 +235,7 @@ const deletePlace = async (req, res, next) => {
     return next(error);
   }
 
-  const imagePath = place.image;
+  const fileId = place.image.fileId;
 
   try {
     const sess = await mongoose.startSession();
@@ -252,8 +252,14 @@ const deletePlace = async (req, res, next) => {
     return next(error);
   }
 
-  fs.unlink(imagePath, (err) => {
-    console.log(err);
+  const imagekit = new ImageKit({
+    publicKey: process.env.IMAGEKIT_PUBLIC_KEY,
+    privateKey: process.env.IMAGEKIT_PRIVATE_KEY,
+    urlEndpoint: "https://ik.imagekit.io/places",
+  });
+
+  imagekit.deleteFile(fileId, function (error, result) {
+    if (error) console.log("ImageKit Error: ", error);
   });
 
   res.json({ message: "Deleted place." });
