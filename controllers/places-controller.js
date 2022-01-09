@@ -124,7 +124,7 @@ const createPlace = async (req, res, next) => {
     description,
     address: coordinates.address,
     location: coordinates,
-    image: imageUrl,
+    image: { url: imageUrl, fileId: req.fileId },
     creator: req.userData.userId,
   });
 

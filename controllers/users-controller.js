@@ -102,7 +102,10 @@ const signupUser = async (req, res, next) => {
   const createdUser = new User({
     name,
     email,
-    image: req.file ? imageUrl : null,
+    image: {
+      url: req.file ? imageUrl : null,
+      fileId: req.file ? req.fileId : null,
+    },
     password: hashedPassword,
     places: [],
   });
@@ -127,9 +130,9 @@ const signupUser = async (req, res, next) => {
     return next(error);
   }
 
-  return res
-    .status(201)
-    .json({ user: { ...createdUser.toObject({ getters: true }), token } });
+  const { password: pass, ...rest } = createdUser.toObject({ getters: true });
+
+  return res.status(201).json({ user: { ...rest, token } });
 };
 
 const loginUser = async (req, res, next) => {

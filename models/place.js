@@ -3,7 +3,10 @@ const { Schema, model, Types } = require("mongoose");
 const placeSchema = new Schema({
   title: { type: String, required: true },
   description: { type: String, required: true },
-  image: { type: String, required: true },
+  image: {
+    url: { type: String, required: true },
+    fileId: { type: String, required: true, select: false },
+  },
   address: { type: String, required: true },
   location: {
     lat: { type: String, required: true },
