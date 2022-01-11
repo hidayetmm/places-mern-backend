@@ -162,7 +162,13 @@ const createPlace = async (req, res, next) => {
     return next(error);
   }
 
-  res.status(201).json({ place: createdPlace });
+  let place = createdPlace.toObject({ getters: true });
+  place = {
+    ...place,
+    image: { url: place.image.url, fileId: undefined },
+  };
+
+  res.status(201).json({ place });
 };
 
 const updatePlace = async (req, res, next) => {
@@ -211,7 +217,9 @@ const deletePlace = async (req, res, next) => {
 
   let place;
   try {
-    place = await Place.findById(placeId).populate("creator");
+    place = await Place.findById(placeId)
+      .select("image.fileId")
+      .populate("creator");
   } catch (err) {
     const error = new HttpError(
       "Could not find a place for the provided id.",
