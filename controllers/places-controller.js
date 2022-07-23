@@ -155,7 +155,7 @@ const createPlace = async (req, res, next) => {
     await user.save({ session: sess, validateModifiedOnly:true });
     await sess.commitTransaction();
   } catch (err) {
-    console.log(err)
+    console.log(err);
     const error = new HttpError(
       "Creating place failed, please try again.",
       500
